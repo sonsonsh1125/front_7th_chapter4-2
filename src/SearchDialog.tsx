@@ -120,6 +120,36 @@ const LectureRow = memo(({ lecture, onAddSchedule }: LectureRowProps) => (
 
 LectureRow.displayName = 'LectureRow';
 
+// 메모이제이션된 시간 태그 컴포넌트
+interface TimeTagProps {
+  time: number;
+  onRemove: (time: number) => void;
+}
+
+const TimeTag = memo(({ time, onRemove }: TimeTagProps) => (
+  <Tag size="sm" variant="outline" colorScheme="blue">
+    <TagLabel>{time}교시</TagLabel>
+    <TagCloseButton onClick={() => onRemove(time)}/>
+  </Tag>
+));
+
+TimeTag.displayName = 'TimeTag';
+
+// 메모이제이션된 전공 태그 컴포넌트
+interface MajorTagProps {
+  major: string;
+  onRemove: (major: string) => void;
+}
+
+const MajorTag = memo(({ major, onRemove }: MajorTagProps) => (
+  <Tag size="sm" variant="outline" colorScheme="blue">
+    <TagLabel>{major.split("<p>").pop()}</TagLabel>
+    <TagCloseButton onClick={() => onRemove(major)}/>
+  </Tag>
+));
+
+MajorTag.displayName = 'MajorTag';
+
 // TODO: 이 컴포넌트에서 불필요한 연산이 발생하지 않도록 다양한 방식으로 시도해주세요.
 const SearchDialog = ({ searchInfo, onClose }: Props) => {
   const { setSchedulesMap } = useScheduleContext();
@@ -179,6 +209,18 @@ const SearchDialog = ({ searchInfo, onClose }: Props) => {
   const changeSearchOption = useCallback((field: keyof SearchOption, value: SearchOption[typeof field]) => {
     setPage(1);
     setSearchOptions(prev => ({ ...prev, [field]: value }));
+    loaderWrapperRef.current?.scrollTo(0, 0);
+  }, []);
+
+  const removeTime = useCallback((time: number) => {
+    setSearchOptions(prev => ({ ...prev, times: prev.times.filter(v => v !== time) }));
+    setPage(1);
+    loaderWrapperRef.current?.scrollTo(0, 0);
+  }, []);
+
+  const removeMajor = useCallback((major: string) => {
+    setSearchOptions(prev => ({ ...prev, majors: prev.majors.filter(v => v !== major) }));
+    setPage(1);
     loaderWrapperRef.current?.scrollTo(0, 0);
   }, []);
 
@@ -314,11 +356,7 @@ const SearchDialog = ({ searchInfo, onClose }: Props) => {
                 >
                   <Wrap spacing={1} mb={2}>
                     {sortedTimes.map(time => (
-                      <Tag key={time} size="sm" variant="outline" colorScheme="blue">
-                        <TagLabel>{time}교시</TagLabel>
-                        <TagCloseButton
-                          onClick={() => changeSearchOption('times', searchOptions.times.filter(v => v !== time))}/>
-                      </Tag>
+                      <TimeTag key={time} time={time} onRemove={removeTime} />
                     ))}
                   </Wrap>
                   <Stack spacing={2} overflowY="auto" h="100px" border="1px solid" borderColor="gray.200"
@@ -343,11 +381,7 @@ const SearchDialog = ({ searchInfo, onClose }: Props) => {
                 >
                   <Wrap spacing={1} mb={2}>
                     {searchOptions.majors.map(major => (
-                      <Tag key={major} size="sm" variant="outline" colorScheme="blue">
-                        <TagLabel>{major.split("<p>").pop()}</TagLabel>
-                        <TagCloseButton
-                          onClick={() => changeSearchOption('majors', searchOptions.majors.filter(v => v !== major))}/>
-                      </Tag>
+                      <MajorTag key={major} major={major} onRemove={removeMajor} />
                     ))}
                   </Wrap>
                   <Stack spacing={2} overflowY="auto" h="100px" border="1px solid" borderColor="gray.200"
